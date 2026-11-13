@@ -25,7 +25,8 @@ paths:
       operationId: createEvents
       description: |
         Stores events for the client identified by the API key. The request body
-        is limited to 100 KB. An event ID can be used to ignore duplicates.
+        is limited to 100 KB (102,400 bytes). An event ID can be used to avoid
+        counting a repeated submission more than once for the same client.
       security:
         - ApiKeyAuth: []
       requestBody:
@@ -58,7 +59,8 @@ paths:
       description: |
         Returns counts per event name and day for the authenticated client.
         Both dates are required, from must not be after to, and the range must
-        be at most 31 days. Results are sorted by date and then by name.
+        be at most 31 days, counting both dates. Days are determined in UTC.
+        Results are sorted by date and then by name.
       security:
         - ApiKeyAuth: []
       parameters:
@@ -126,7 +128,7 @@ components:
           description: ISO 8601 date-time.
         props:
           type: object
-          description: Flat key/value properties with at most 20 keys.
+          description: Flat properties (string, number, boolean, or null) with at most 20 keys.
           maxProperties: 20
           additionalProperties:
             oneOf:
@@ -222,7 +224,7 @@ components:
             error: unauthorized
             message: A valid API key is required.
     PayloadTooLarge:
-      description: The request body exceeds 100 KB.
+      description: The request body exceeds 100 KB (102,400 bytes).
       content:
         application/json:
           schema:
