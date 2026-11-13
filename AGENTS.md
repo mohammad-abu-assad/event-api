@@ -57,7 +57,7 @@ I'm building this to prove my skills for Solution Engineer roles, so I must unde
   - `memory.ts` for tests and local development (default when `STORE=memory`)
   - `firestore.ts` using `@google-cloud/firestore` (when `STORE=firestore`)
   The routes only talk to the interface, so tests never need the cloud.
-- **Firestore layout:** collection `events`. Document ID = the event's `id` when given (so a resend overwrites itself instead of duplicating), otherwise auto-generated. Each document stores `clientId`, `name`, `timestamp`, `date` (YYYY-MM-DD, derived), `props`, `receivedAt`. Stats query: `clientId ==` + `date` range, counted in code. Tell me when a composite index is needed and how to create it.
+- **Firestore layout:** collection `events`. When an event has an `id`, the document ID is a SHA-256 hash of the JSON array `[clientId, eventId]`; this makes resends idempotent without collisions between clients. Otherwise, the document ID is auto-generated. Each document stores `clientId`, `name`, `timestamp`, `date` (YYYY-MM-DD, derived), `props`, `receivedAt`. Stats query: `clientId ==` + `date` range, counted in code. Tell me when a composite index is needed and how to create it.
 - **Stateless:** nothing important kept in memory between requests, except the per-instance rate limiter (document that this limit is per instance).
 - **Port:** listen on `process.env.PORT` (default 8080).
 - **Docker:** multi-stage build on `node:22-slim`; final stage has only `dist/` and production dependencies, runs as `USER node`. Include a `.dockerignore` (node_modules, dist, .git, .env).
