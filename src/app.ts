@@ -1,5 +1,6 @@
 import express, { type ErrorRequestHandler } from 'express';
 import { authenticate, readApiKeys } from './auth.js';
+import { requestLogger } from './logger.js';
 import { createRateLimiter } from './rateLimit.js';
 import { healthRouter } from './routes/health.js';
 import { eventsRouter } from './routes/events.js';
@@ -17,6 +18,7 @@ export function createApp(options: AppOptions = {}) {
   const store = options.store ?? new MemoryEventStore();
   const apiKeys = options.apiKeys ?? readApiKeys(process.env.API_KEYS);
 
+  app.use(requestLogger);
   app.use(healthRouter);
   app.use('/v1', authenticate(apiKeys), createRateLimiter());
   app.use('/v1/events', express.json({ limit: '100kb' }));
@@ -37,7 +39,6 @@ export function createApp(options: AppOptions = {}) {
         issues: [{ path: '', message: 'Invalid JSON body' }],
       });
     } else {
-      console.error(JSON.stringify({ severity: 'ERROR', message: 'Unexpected request error' }));
       res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred.' });
     }
   };

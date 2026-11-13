@@ -6,11 +6,12 @@ const port = Number(process.env.PORT ?? 8080);
 const store = process.env.STORE ?? 'memory';
 
 if (store !== 'memory' && store !== 'firestore') {
-  throw new Error('STORE must be memory or firestore');
+  console.log(JSON.stringify({ severity: 'ERROR', message: 'STORE must be memory or firestore' }));
+  process.exit(1);
 }
 
 const eventStore = store === 'firestore' ? new FirestoreEventStore() : new MemoryEventStore();
 
 createApp({ store: eventStore }).listen(port, () => {
-  console.log(`Event API listening on port ${port}`);
+  console.log(JSON.stringify({ severity: 'INFO', message: `Event API listening on port ${port}` }));
 });
