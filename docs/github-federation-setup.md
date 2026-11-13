@@ -79,3 +79,7 @@ variables. The API key stays in Secret Manager.
 The existing Cloud Run service's secret mapping is retained on deploy. If a
 secret version is rotated, update that mapping separately; the workflow does
 not create or replace secret versions.
+
+After a push to `main`, check the Actions run and confirm that
+`https://event-api-401789805659.europe-west1.run.app/health` returns
+`{"status":"ok"}`.
