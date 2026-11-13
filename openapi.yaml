@@ -2,7 +2,9 @@ openapi: 3.0.3
 info:
   title: Event API
   version: 0.1.0
-  description: API for receiving events and reporting event statistics.
+  description: |
+    Receives batches of events and returns daily event counts for the
+    authenticated client. The health endpoint does not require authentication.
 paths:
   /health:
     get:
@@ -14,10 +16,244 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required: [status]
-                properties:
-                  status:
-                    type: string
-                    enum: [ok]
-                additionalProperties: false
+                $ref: '#/components/schemas/HealthResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /v1/events:
+    post:
+      summary: Submit a batch of events
+      operationId: createEvents
+      description: |
+        Stores events for the client identified by the API key. The request body
+        is limited to 100 KB. An event ID can be used to ignore duplicates.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventBatch'
+      responses:
+        '201':
+          description: The batch was accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedResponse'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /v1/stats:
+    get:
+      summary: Get daily event counts
+      operationId: getStats
+      description: |
+        Returns counts per event name and day for the authenticated client.
+        Both dates are required, from must not be after to, and the range must
+        be at most 31 days. Results are sorted by date and then by name.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: Start date in YYYY-MM-DD format.
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          description: End date in YYYY-MM-DD format.
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Daily counts for the requested date range.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: |
+        The key identifies the client. The server maps client IDs to keys via
+        the API_KEYS environment variable. Never include a real key in this spec.
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+    Event:
+      type: object
+      required: [name, timestamp]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Optional event ID used to ignore duplicate submissions.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 date-time.
+        props:
+          type: object
+          description: Flat key/value properties with at most 20 keys.
+          maxProperties: 20
+          additionalProperties:
+            oneOf:
+              - type: string
+                nullable: true
+              - type: number
+              - type: boolean
+    EventBatch:
+      type: object
+      required: [events]
+      properties:
+        events:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/Event'
+    AcceptedResponse:
+      type: object
+      required: [accepted]
+      properties:
+        accepted:
+          type: integer
+          minimum: 0
+          description: Number of events accepted from the batch.
+    StatsResponse:
+      type: object
+      required: [from, to, stats]
+      properties:
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        stats:
+          type: array
+          description: Counts sorted by date, then by event name.
+          items:
+            $ref: '#/components/schemas/Stat'
+    Stat:
+      type: object
+      required: [date, name, count]
+      properties:
+        date:
+          type: string
+          format: date
+        name:
+          type: string
+        count:
+          type: integer
+          minimum: 0
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          enum: [invalid_request, unauthorized, payload_too_large, rate_limited, internal_error]
+        message:
+          type: string
+        issues:
+          type: array
+          description: Validation issues, included for invalid requests.
+          items:
+            type: object
+            required: [path, message]
+            properties:
+              path:
+                type: string
+              message:
+                type: string
+  responses:
+    InvalidRequest:
+      description: Validation failed; issues describe the invalid fields.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: invalid_request
+            message: Request validation failed.
+            issues:
+              - path: events
+                message: At least one event is required.
+    Unauthorized:
+      description: The API key is missing or incorrect.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: unauthorized
+            message: A valid API key is required.
+    PayloadTooLarge:
+      description: The request body exceeds 100 KB.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: payload_too_large
+            message: The request body is too large.
+    RateLimited:
+      description: |
+        The key exceeded 60 requests per minute. This limit is applied per
+        running instance.
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying.
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: rate_limited
+            message: Too many requests; try again later.
+    InternalError:
+      description: An unexpected error occurred; details are kept in server logs.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: internal_error
+            message: An unexpected error occurred.
