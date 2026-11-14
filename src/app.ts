@@ -1,5 +1,6 @@
 import express, { type ErrorRequestHandler } from 'express';
 import { authenticate, readApiKeys } from './auth.js';
+import { cors } from './cors.js';
 import { requestLogger } from './logger.js';
 import { createRateLimiter } from './rateLimit.js';
 import { healthRouter } from './routes/health.js';
@@ -20,6 +21,7 @@ export function createApp(options: AppOptions = {}) {
 
   app.use(requestLogger);
   app.use(healthRouter);
+  app.use('/v1', cors);
   app.use('/v1', authenticate(apiKeys), createRateLimiter());
   app.use('/v1/events', express.json({ limit: '100kb' }));
   app.use('/v1', eventsRouter(store), statsRouter(store));

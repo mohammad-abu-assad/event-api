@@ -5,6 +5,9 @@ info:
   description: |
     Receives batches of events and returns daily event counts for the
     authenticated client. The health endpoint does not require authentication.
+    Browser requests are permitted from https://activity-tracker-514608.web.app,
+    https://activity-tracker-514608.firebaseapp.com, and HTTP localhost origins.
+    CORS preflight requests to /v1 do not require an API key.
 paths:
   /health:
     get:
