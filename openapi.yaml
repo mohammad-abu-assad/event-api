@@ -234,8 +234,8 @@ components:
             message: The request body is too large.
     RateLimited:
       description: |
-        The key exceeded 60 requests per minute. This limit is applied per
-        running instance.
+        The key exceeded its per-instance limit of 60 requests per minute,
+        or 10 requests per minute for the demo-client client ID.
       headers:
         Retry-After:
           description: Seconds to wait before retrying.

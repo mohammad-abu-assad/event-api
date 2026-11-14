@@ -34,7 +34,9 @@ The complete contract, request schemas, and error responses are in
 
 Stats dates are UTC and inclusive, with a maximum range of 31 days. Requests
 are limited to 100 KB and 60 authenticated requests per minute per key **per
-instance**. The in-memory limiter is not shared across Cloud Run instances.
+instance**. The `demo-client` client ID is limited to 10 requests per minute
+per instance. The in-memory limiter is not shared across Cloud Run instances,
+and each request can contain up to 100 events; this is not a global cost cap.
 The memory store is for local development and tests; its events disappear
 when the process stops. The Firestore store persists events.
 

@@ -125,6 +125,18 @@ describe('event ingestion and stats', () => {
     expect(other.status).toBe(200);
   });
 
+  it('limits demo-client to 10 requests without reducing another client’s limit', async () => {
+    const app = createApp({ apiKeys: { 'demo-client': 'test-demo-key', first: keys.first } });
+    const url = '/v1/stats?from=2026-01-01&to=2026-01-01';
+    for (let i = 0; i < 10; i++) {
+      expect((await request(app).get(url).set('x-api-key', 'test-demo-key')).status).toBe(200);
+    }
+    const limited = await request(app).get(url).set('x-api-key', 'test-demo-key');
+    expect(limited.status).toBe(429);
+    expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0);
+    expect((await request(app).get(url).set('x-api-key', keys.first)).status).toBe(200);
+  });
+
   it('resets the rate limit after one minute', async () => {
     const now = vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
     try {

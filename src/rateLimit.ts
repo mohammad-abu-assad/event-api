@@ -10,7 +10,8 @@ export function createRateLimiter(): RequestHandler {
       window = { count: 0, resetAt: now + 60_000 };
       windows.set(clientId, window);
     }
-    if (window.count >= 60) {
+    const limit = clientId === 'demo-client' ? 10 : 60;
+    if (window.count >= limit) {
       res.set('Retry-After', String(Math.max(1, Math.ceil((window.resetAt - now) / 1000))));
       res.status(429).json({ error: 'rate_limited', message: 'Too many requests; try again later.' });
       return;
