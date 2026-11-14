@@ -4,6 +4,10 @@ A small event-ingestion API for apps that need to send activity in batches
 and retrieve daily event counts. Each API key identifies a client, and each
 client can see only its own statistics.
 
+The [live SDK demo](https://activity-tracker-514608.web.app/) sends click
+events to this API and shows today's counts. Its source is in the
+[Events SDK repository](https://github.com/mohammad-abu-assad/events-sdk).
+
 ## Architecture
 
 ```mermaid
@@ -39,6 +43,19 @@ per instance. The in-memory limiter is not shared across Cloud Run instances,
 and each request can contain up to 100 events; this is not a global cost cap.
 The memory store is for local development and tests; its events disappear
 when the process stops. The Firestore store persists events.
+
+### Browser access (CORS)
+
+The API allows browser requests from `https://activity-tracker-514608.web.app`,
+`https://activity-tracker-514608.firebaseapp.com`, and HTTP `localhost` origins
+(including development ports). CORS preflight requests under `/v1` are handled
+before authentication and allow `GET`, `POST`, `Content-Type`, and `X-API-Key`.
+Actual protected requests still require a valid API key. Other origins do not
+receive permission to read API responses. CORS is a browser policy, not a
+substitute for authentication or rate limiting.
+
+The public demo uses its own low-limit key. A key included in browser code is
+visible to visitors and must not be treated as private.
 
 ## Local setup
 
