@@ -235,7 +235,7 @@ components:
     RateLimited:
       description: |
         The key exceeded its per-instance limit of 60 requests per minute,
-        or 10 requests per minute for the demo-client client ID.
+        or 10 requests per minute for the sdk-public-demo client ID.
       headers:
         Retry-After:
           description: Seconds to wait before retrying.

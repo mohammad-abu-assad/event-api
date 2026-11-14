@@ -125,8 +125,8 @@ describe('event ingestion and stats', () => {
     expect(other.status).toBe(200);
   });
 
-  it('limits demo-client to 10 requests without reducing another client’s limit', async () => {
-    const app = createApp({ apiKeys: { 'demo-client': 'test-demo-key', first: keys.first } });
+  it('limits sdk-public-demo to 10 requests without reducing another client’s limit', async () => {
+    const app = createApp({ apiKeys: { 'sdk-public-demo': 'test-demo-key', first: keys.first } });
     const url = '/v1/stats?from=2026-01-01&to=2026-01-01';
     for (let i = 0; i < 10; i++) {
       expect((await request(app).get(url).set('x-api-key', 'test-demo-key')).status).toBe(200);
