@@ -47,6 +47,13 @@ In the console, open **Cloud Run → event-api → Logs** to inspect structured
 request logs, or use **Logging → Logs Explorer** and filter by service and
 revision. Never include an API key or event properties in a log query.
 
+For unexpected request failures, the structured request log includes an
+`errorCategory` derived from a small allowlist of numeric gRPC status
+codes. Examples are `PERMISSION_DENIED`, `FAILED_PRECONDITION`, and
+`UNAVAILABLE`; other errors are recorded as `UNKNOWN`. Use the category
+as a troubleshooting clue, not proof of a specific cause. Raw exception
+messages and request data are deliberately excluded from the log.
+
 ## Rotate an API key
 
 Create a new private JSON file containing the full client-ID-to-key mapping.

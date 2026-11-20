@@ -54,6 +54,43 @@ describe('structured request logging', () => {
     expect(output).toHaveBeenCalledOnce();
     const line = String(output.mock.calls[0][0]);
     expect(line).not.toContain('sensitive exception details');
-    expect(JSON.parse(line)).toMatchObject({ severity: 'ERROR', status: 500, clientId: 'demo', eventCount: 1 });
+    expect(JSON.parse(line)).toMatchObject({ severity: 'ERROR', status: 500, clientId: 'demo', eventCount: 1, errorCategory: 'UNKNOWN' });
+  });
+
+  it.each([
+    [7, 'PERMISSION_DENIED'],
+    [9, 'FAILED_PRECONDITION'],
+    [14, 'UNAVAILABLE'],
+  ])('logs the safe category for dependency error code %s', async (code, category) => {
+    const output = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const store = new MemoryEventStore();
+    const error = Object.assign(new Error('private dependency message'), { code, details: 'private details' });
+    vi.spyOn(store, 'save').mockRejectedValue(error);
+    const app = createApp({ store, apiKeys: { demo: apiKey } });
+
+    const response = await request(app).post('/v1/events').set('x-api-key', apiKey)
+      .send({ events: [{ name: 'tap', timestamp: '2026-01-01T00:00:00Z', props: { private: 'secret-value' } }] });
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({ error: 'internal_error', message: 'An unexpected error occurred.' });
+    expect(output).toHaveBeenCalledOnce();
+    const line = String(output.mock.calls[0][0]);
+    expect(JSON.parse(line)).toMatchObject({ severity: 'ERROR', status: 500, errorCategory: category });
+    expect(line).not.toContain('private dependency message');
+    expect(line).not.toContain('private details');
+    expect(line).not.toContain('secret-value');
+    expect(line).not.toContain(apiKey);
+  });
+
+  it('does not log an unrecognized error code', async () => {
+    const output = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const store = new MemoryEventStore();
+    vi.spyOn(store, 'save').mockRejectedValue(Object.assign(new Error('private'), { code: 'private-error-code' }));
+    const app = createApp({ store, apiKeys: { demo: apiKey } });
+    await request(app).post('/v1/events').set('x-api-key', apiKey)
+      .send({ events: [{ name: 'tap', timestamp: '2026-01-01T00:00:00Z' }] });
+    const line = String(output.mock.calls[0][0]);
+    expect(JSON.parse(line).errorCategory).toBe('UNKNOWN');
+    expect(line).not.toContain('private-error-code');
   });
 });

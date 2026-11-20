@@ -23,6 +23,17 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
   /v1/events:
+    options:
+      summary: Check browser access to event ingestion
+      operationId: preflightEvents
+      description: CORS preflight for a browser request with an Origin header.
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      responses:
+        '204':
+          $ref: '#/components/responses/PreflightAllowed'
+        '403':
+          $ref: '#/components/responses/ForbiddenOrigin'
     post:
       summary: Submit a batch of events
       operationId: createEvents
@@ -56,6 +67,17 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
   /v1/stats:
+    options:
+      summary: Check browser access to statistics
+      operationId: preflightStats
+      description: CORS preflight for a browser request with an Origin header.
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      responses:
+        '204':
+          $ref: '#/components/responses/PreflightAllowed'
+        '403':
+          $ref: '#/components/responses/ForbiddenOrigin'
     get:
       summary: Get daily event counts
       operationId: getStats
@@ -97,6 +119,14 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 components:
+  parameters:
+    Origin:
+      name: Origin
+      in: header
+      required: true
+      description: Browser origin requesting access.
+      schema:
+        type: string
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
@@ -190,7 +220,7 @@ components:
       properties:
         error:
           type: string
-          enum: [invalid_request, unauthorized, payload_too_large, rate_limited, internal_error]
+          enum: [invalid_request, unauthorized, forbidden, payload_too_large, rate_limited, internal_error]
         message:
           type: string
         issues:
@@ -205,6 +235,30 @@ components:
               message:
                 type: string
   responses:
+    PreflightAllowed:
+      description: The origin is permitted to make browser requests.
+      headers:
+        Access-Control-Allow-Origin:
+          description: The permitted origin.
+          schema:
+            type: string
+        Access-Control-Allow-Methods:
+          description: Allowed HTTP methods.
+          schema:
+            type: string
+        Access-Control-Allow-Headers:
+          description: Allowed request headers.
+          schema:
+            type: string
+    ForbiddenOrigin:
+      description: The origin is not permitted to make browser requests.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: forbidden
+            message: Origin is not allowed.
     InvalidRequest:
       description: Validation failed; issues describe the invalid fields.
       content:

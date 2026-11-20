@@ -1,7 +1,7 @@
 import express, { type ErrorRequestHandler } from 'express';
 import { authenticate, readApiKeys } from './auth.js';
 import { cors } from './cors.js';
-import { requestLogger } from './logger.js';
+import { requestLogger, safeErrorCategory } from './logger.js';
 import { createRateLimiter } from './rateLimit.js';
 import { healthRouter } from './routes/health.js';
 import { eventsRouter } from './routes/events.js';
@@ -41,6 +41,7 @@ export function createApp(options: AppOptions = {}) {
         issues: [{ path: '', message: 'Invalid JSON body' }],
       });
     } else {
+      res.locals.errorCategory = safeErrorCategory(error);
       res.status(500).json({ error: 'internal_error', message: 'An unexpected error occurred.' });
     }
   };

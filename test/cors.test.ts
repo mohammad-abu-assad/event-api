@@ -25,6 +25,17 @@ describe('CORS', () => {
   it.each(['https://attacker.example', 'http://localhost.attacker.example:5173', 'https://activity-tracker-514608.web.app.attacker.example'])('does not allow %s', async origin => {
     const response = await request(app).options(path).set('Origin', origin).set('Access-Control-Request-Method', 'POST');
     expect(response.status).toBe(403);
+    expect(response.body).toEqual({ error: 'forbidden', message: 'Origin is not allowed.' });
+    expect(response.headers['content-type']).toMatch(/application\/json/);
+    expect(response.headers['access-control-allow-origin']).toBeUndefined();
+    expect(response.headers.vary).toContain('Origin');
+  });
+
+  it('returns the same structured error for a disallowed stats preflight', async () => {
+    const response = await request(app).options('/v1/stats').set('Origin', 'https://attacker.example')
+      .set('Access-Control-Request-Method', 'GET');
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({ error: 'forbidden', message: 'Origin is not allowed.' });
     expect(response.headers['access-control-allow-origin']).toBeUndefined();
   });
 });

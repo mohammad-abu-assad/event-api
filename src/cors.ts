@@ -30,7 +30,7 @@ export const cors: RequestHandler = (req, res, next) => {
     }
   }
   if (req.method === 'OPTIONS' && origin) {
-    res.status(403).end();
+    res.status(403).json({ error: 'forbidden', message: 'Origin is not allowed.' });
     return;
   }
   next();
