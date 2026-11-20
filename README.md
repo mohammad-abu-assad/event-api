@@ -24,6 +24,8 @@ Cloud Run uses a runtime service account for Firestore and the `api-keys`
 secret. GitHub Actions uses a separate deployer account through Workload
 Identity Federation, without a long-lived Google service-account key file.
 The service is configured in `europe-west1` for zero to two instances.
+Cloud Monitoring checks `/health` every minute and has an email alert for
+uptime failures; see the [runbook](docs/runbook.md#uptime-alert).
 
 ## API
 

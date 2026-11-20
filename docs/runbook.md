@@ -54,6 +54,15 @@ codes. Examples are `PERMISSION_DENIED`, `FAILED_PRECONDITION`, and
 as a troubleshooting clue, not proof of a specific cause. Raw exception
 messages and request data are deliberately excluded from the log.
 
+## Uptime alert
+
+The `event-api-health` uptime check requests `/health` over HTTPS every
+minute from global locations. The enabled `Event API health failure`
+alert policy monitors the check and sends notifications to the
+`Event API alerts` email channel. View their status in **Monitoring →
+Uptime checks**, and manage the email channel in **Monitoring → Alerting →
+Edit notification channels**. The alert uses a one-minute retest window.
+
 ## Rotate an API key
 
 Create a new private JSON file containing the full client-ID-to-key mapping.
